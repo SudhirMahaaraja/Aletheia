@@ -2,13 +2,6 @@
 
 > *The act of revealing what is hidden*
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
-[![React 18](https://img.shields.io/badge/React-18.0+-61DAFB.svg)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.0+-646CFF.svg)](https://vitejs.dev/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Motor-4EA94B.svg)](https://www.mongodb.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
 **Aletheia** is a modern, high-performance internal knowledge vault and retrieval-augmented AI assistant. It combines markdown document parsing, vector embeddings, interactive node-graph visualization, GitHub repository indexing, and real-time RAG (Retrieval-Augmented Generation) chat in a single decoupled web platform.
 
 ---
