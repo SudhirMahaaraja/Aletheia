@@ -6,7 +6,7 @@
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 The project is built on a modular, decoupled client-server architecture with an asynchronous pipeline for document ingestion and vector retrieval:
 
@@ -31,10 +31,10 @@ The project is built on a modular, decoupled client-server architecture with an 
 ┌─────────────────────────────────────────────────────────────┐
 │                     MongoDB Database                        │
 │  (wiki_embeddings, submissions, github_integrations)        │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────┴──────────────────────────────┘
 ```
 
-### Core Tech Stack:
+### Core Tech Stack
 - **Backend Framework:** FastAPI (Python 3.10+) with Uvicorn server
 - **Frontend Framework:** React 18 (Vite, TailwindCSS)
 - **Database Layer:** MongoDB with Motor (Asynchronous Driver)
@@ -44,27 +44,27 @@ The project is built on a modular, decoupled client-server architecture with an 
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 1. 🤖 RAG AI Assistant & Vector Search
+### 1. RAG AI Assistant & Vector Search
 - **Multi-Format Document Parsing:** Ingests `.md`, `.txt`, `.pdf`, `.docx`, and `.ipynb` files seamlessly.
 - **Jupyter Notebook Support:** Converts markdown and code cells into structured wiki articles.
 - **Local Embedding Generation:** Generates 384-dimensional dense vectors locally using HuggingFace `all-MiniLM-L6-v2`.
 - **Hybrid Vector Retrieval:** Combines semantic cosine similarity search with exact keyword filters for accurate AI chat context.
 
-### 2. 🕸️ Obsidian-Style Interactive Graph View
+### 2. Obsidian-Style Interactive Graph View
 - Renders document connections, internal wiki links, and topic relationships using interactive force-directed graph rendering.
 - Visualizes vault organization and knowledge clusters in real time.
 
-### 3. 📦 Remote GitHub Repository Ingestion
+### 3. Remote GitHub Repository Ingestion
 - Allows administrators to index external GitHub repositories into the company knowledge base via GitHub API zipball download.
 - Automatically parses codebase structures and indexes source files for AI context querying.
 
-### 4. 🔒 Role-Based Access Control (RBAC) & Admin Queue
+### 4. Role-Based Access Control (RBAC) & Admin Queue
 - JWT-based authentication with expiration and role verification (User / Superadmin).
 - Submission queue for user uploads with approval/rejection workflows before vault ingestion.
 
-### 5. 🎨 Ethereal Sage Design System
+### 5. Ethereal Sage Design System
 - **Primary Color:** Deep Forest (`#2F4A3B`)
 - **Surface Color:** Warm Cream (`#F9F8F3`)
 - **Card Surfaces:** Pure White (`#FFFFFF`) with 1px border & 8px corner radius
@@ -72,7 +72,7 @@ The project is built on a modular, decoupled client-server architecture with an 
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 .
@@ -107,7 +107,7 @@ The project is built on a modular, decoupled client-server architecture with an 
 
 ---
 
-## ⚙️ Environment Configuration
+## Environment Configuration
 
 Before running the application, copy the example environment file and configure your local settings:
 
@@ -145,7 +145,7 @@ PORT=8000
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
 ### Prerequisites
 - **Python:** 3.10 or higher
@@ -187,7 +187,7 @@ The frontend interface will run on `http://localhost:5173`.
 
 ---
 
-## 📋 Pre-Push Checklist
+## Pre-Push Checklist
 
 Before pushing this codebase to GitHub, complete the following verification steps:
 
@@ -210,7 +210,6 @@ Before pushing this codebase to GitHub, complete the following verification step
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
