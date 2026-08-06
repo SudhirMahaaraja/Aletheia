@@ -1,0 +1,50 @@
+# Graphify generated files & directories
+graphify-out/
+graphify_out/
+.graphify/
+.graphify
+graphify.json
+graphify-*.json
+graphify.db
+graphify.log
+
+# Environment and secrets
+.env
+.env.local
+*.env
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & System
+.vscode/
+.idea/
+.obsidian/
+.DS_Store
+Thumbs.db
