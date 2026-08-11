@@ -2,73 +2,72 @@
 
 > *The act of revealing what is hidden*
 
-**Aletheia** is a modern, high-performance internal knowledge vault and retrieval-augmented AI assistant. It combines markdown document parsing, vector embeddings, interactive node-graph visualization, GitHub repository indexing, and real-time RAG (Retrieval-Augmented Generation) chat in a single decoupled web platform.
+**Aletheia** is a modern, high-performance internal knowledge vault, code-graph ingestion engine, and retrieval-augmented AI assistant (RAG). It combines multi-language code & document parsing (Python, JavaScript/TypeScript, SQL, PDF, DOCX, Markdown), dense vector embeddings (code & text), Obsidian-compatible Markdown vault generation, knowledge graph construction via Graphifyy, and multi-mode RAG AI engines.
 
 ---
 
 ## System Architecture
 
-The project is built on a modular, decoupled client-server architecture with an asynchronous pipeline for document ingestion and vector retrieval:
+The project is built on a modular, asynchronous backend architecture for multi-source knowledge ingestion, vector retrieval, and RAG chat:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                       React Frontend                        │
-│ (Vite, TailwindCSS, Axios Client, Obsidian Local Graph)     │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                      REST API / JWT Auth
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      FastAPI Backend                        │
-│   (FastAPI, Uvicorn, SentenceTransformers Embedding,        │
-│    OpenAI API Integration, BSON, PyPDF/Docx Parsing)        │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                     MongoDB / Vector Storage
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     MongoDB Database                        │
-│  (wiki_embeddings, submissions, github_integrations)        │
-└──────────────────────────────┴──────────────────────────────┘
+│                    Aletheia Core Backend                    │
+│      (Python 3.10+, FastAPI Architecture, Motor Async)      │
+├──────────────────────────────┬──────────────────────────────┤
+│  Ingestion & AST Parsers     │    Multi-Mode RAG Engines   │
+│  (Tree-sitter JS, Python,    │   - Vault Chat               │
+│   SQL, PDF/Docx, Markdown)   │   - Codebase Repo Chat       │
+│  (Graphifyy Graph Builder)   │   - Architectural Brainstorm │
+└──────────────┬───────────────┴──────────────┬───────────────┘
+               │                              │
+     MongoDB & Vector Storage        Embedding Models
+               │                   (Jina Code & MiniLM Text)
+               ▼                              ▼
+┌──────────────────────────────┐┌──────────────────────────────┐
+│       MongoDB Database       ││  Knowledge Vault Directory   │
+│ (document_chunks,            ││   (data/vault/wiki,          │
+│  code_chunks, graph_nodes,   ││    data/vault/raw,           │
+│  graph_edges, repositories)  ││    data/vault/graphs)       │
+└──────────────────────────────┘└──────────────────────────────┘
 ```
 
 ### Core Tech Stack
-- **Backend Framework:** FastAPI (Python 3.10+) with Uvicorn server
-- **Frontend Framework:** React 18 (Vite, TailwindCSS)
-- **Database Layer:** MongoDB with Motor (Asynchronous Driver)
-- **Vector Embeddings:** `SentenceTransformers` (`all-MiniLM-L6-v2` loaded locally in offline mode)
-- **LLM Integration:** OpenAI API / Azure OpenAI (GPT-4o-mini default)
-- **Design System:** Ethereal Sage Theme (`#2F4A3B` deep forest green & `#F9F8F3` warm cream)
+- **Backend Framework:** Python 3.10+ with FastAPI / Motor (Asynchronous MongoDB Client)
+- **Code & AST Parsing:** Tree-Sitter (`tree-sitter-javascript`), Python AST, `sqlparse`, PyMuPDF (`fitz`), `python-docx`
+- **Knowledge Graph Builder:** `graphifyy` AST and concept graph extractor
+- **Vector Embeddings:** Dual embedding pipelines:
+  - Text Embeddings: `sentence-transformers/all-MiniLM-L6-v2` (384d)
+  - Code Embeddings: `jinaai/jina-embeddings-v2-base-code` (768d)
+- **LLM Integration:** OpenAI API / Azure OpenAI (GPT-4 / GPT-4o models)
+- **Authentication & Security:** JWT tokens (Access & Refresh), PassLib with Bcrypt, role-based authorization (`admin`, `developer`, `pm`), and structured audit logging
 
 ---
 
 ## Key Features
 
-### 1. RAG AI Assistant & Vector Search
-- **Multi-Format Document Parsing:** Ingests `.md`, `.txt`, `.pdf`, `.docx`, and `.ipynb` files seamlessly.
-- **Jupyter Notebook Support:** Converts markdown and code cells into structured wiki articles.
-- **Local Embedding Generation:** Generates 384-dimensional dense vectors locally using HuggingFace `all-MiniLM-L6-v2`.
-- **Hybrid Vector Retrieval:** Combines semantic cosine similarity search with exact keyword filters for accurate AI chat context.
+### 1. Multi-Language Code & Document Ingestion
+- **AST Code Parsing:** Extracts functions, classes, dependencies, and calls from Python (`.py`), JavaScript/TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`), and SQL (`.sql`) files.
+- **Document & Media Support:** Parses `.md`, `.txt`, `.pdf`, `.docx`, and `.ipynb` files with automated chunking.
+- **Design System Extractor:** Automatically analyzes repository design tokens, UI components, and styling conventions (`design_extractor.py`).
 
-### 2. Obsidian-Style Interactive Graph View
-- Renders document connections, internal wiki links, and topic relationships using interactive force-directed graph rendering.
-- Visualizes vault organization and knowledge clusters in real time.
+### 2. Knowledge Graph Construction & Vault Sync
+- Builds node-edge knowledge graphs connecting files, functions, concepts, and documentation via `graphifyy`.
+- Generates an Obsidian-compatible Markdown Vault under `data/vault/` with frontmatter metadata and internal wiki links (`[[link]]`).
+- Synchronizes graph nodes and edges (`graph_nodes`, `graph_edges`) in MongoDB.
 
-### 3. Remote GitHub Repository Ingestion
-- Allows administrators to index external GitHub repositories into the company knowledge base via GitHub API zipball download.
-- Automatically parses codebase structures and indexes source files for AI context querying.
+### 3. Multi-Engine RAG Assistant
+- **Vault Chat (`vault_chat.py`):** Answers domain knowledge queries based on indexed documentation chunks.
+- **Repo Chat (`repo_chat.py`):** Queries source code chunks with file and line range citations.
+- **Architectural Brainstorm (`brainstorm.py`):** Generates architectural plans and component recommendations based on indexed codebases and design systems.
 
-### 4. Role-Based Access Control (RBAC) & Admin Queue
-- JWT-based authentication with expiration and role verification (User / Superadmin).
-- Submission queue for user uploads with approval/rejection workflows before vault ingestion.
+### 4. GitHub Remote Ingestion & Automated Mirroring
+- Clones and indexes external GitHub repositories.
+- Extracts file trees, generates repo overview pages, and mirrors raw source code into local vault structure.
 
-### 5. Ethereal Sage Design System
-- **Primary Color:** Deep Forest (`#2F4A3B`)
-- **Surface Color:** Warm Cream (`#F9F8F3`)
-- **Card Surfaces:** Pure White (`#FFFFFF`) with 1px border & 8px corner radius
-- **Controls:** Fully rounded pill tags and 8px input components
+### 5. Role-Based Security & Audit Logging
+- JWT authentication with refresh token revocation flow.
+- Structured audit logs for user logins, document uploads, and administrative actions.
 
 ---
 
@@ -76,71 +75,91 @@ The project is built on a modular, decoupled client-server architecture with an 
 
 ```
 .
-├── backend/                  # FastAPI Application Server
-│   ├── app/                  # Application Core Modules
-│   │   ├── controllers/      # API Route Handlers (Auth, Wiki, Chat, GitHub, Admin)
-│   │   ├── core/             # Security, JWT, & Configuration
-│   │   ├── db/               # MongoDB Motor Database Client
-│   │   ├── models/           # Pydantic Schemas & DTO Definitions
-│   │   └── views/            # Response Envelopes & Presentation
-│   ├── data/                 # Sample Data & Local Database Snapshots
-│   ├── main.py               # Backend Entry Point
-│   └── requirements.txt      # Python Dependencies
+├── backend/                              # Core Application Engine
+│   ├── app/
+│   │   └── controllers/                  # Service Controllers & Engines
+│   │       ├── ingestion/                # Ingestion Pipeline & Parsers
+│   │       │   ├── parsers/              # AST & Document Parsers (Python, JS, SQL, Doc)
+│   │       │   ├── chunker.py            # Code & Text Chunk Router
+│   │       │   ├── design_extractor.py   # UI/Design System Extractor
+│   │       │   ├── embedder.py           # Local & Remote Vector Embedder
+│   │       │   ├── graph_builder.py      # Graphifyy Knowledge Graph Builder
+│   │       │   └── pipeline.py           # Master Async Ingestion Pipeline
+│   │       ├── rag/                      # RAG Engines
+│   │       │   ├── brainstorm.py         # Architectural Brainstorm Engine
+│   │       │   ├── repo_chat.py          # Codebase RAG Assistant
+│   │       │   ├── retriever.py          # Dual Vector & Hybrid Retriever
+│   │       │   └── vault_chat.py         # Vault Knowledge Assistant
+│   │       ├── auth_controller.py        # Authentication & Role Management
+│   │       ├── github_controller.py      # GitHub Integration Service
+│   │       ├── graph_store.py           # Graph Query & Traversal Service
+│   │       ├── vault_manager.py          # Local Vault File Operations
+│   │       └── vector_store.py           # Vector Index & Search Store
+│   ├── core/                             # Infrastructure & Core Configuration
+│   │   ├── config.py                     # Pydantic Settings & Env Config
+│   │   ├── dependencies.py               # FastAPI Dependencies & DB Injections
+│   │   ├── embeddings.py                 # SentenceTransformers Models Loader
+│   │   ├── logging_config.py             # Structured App Logger
+│   │   └── security.py                   # JWT Utilities & Password Hashing
+│   └── requirements.txt                  # Backend Python Dependencies
 │
-├── frontend/                 # React Frontend Application (Vite)
-│   ├── src/
-│   │   ├── api/              # Axios HTTP Client with Interceptors
-│   │   ├── components/       # Reusable UI Layout Components
-│   │   ├── context/          # React State Providers (Auth & Chat Context)
-│   │   ├── pages/            # View Pages (Wiki, Graph, Chat, Submit, Admin)
-│   │   ├── App.jsx           # App Switchboard & Router
-│   │   └── index.css         # Ethereal Sage Theme System
-│   ├── package.json          # Node.js Dependencies
-│   └── vite.config.js        # Vite Configuration
+├── data/                                 # Knowledge Storage & Vault
+│   ├── vault/                            # Obsidian-Compatible Local Vault
+│   │   ├── raw/                          # Original File Mirrors
+│   │   ├── wiki/                         # Generated Markdown Wiki & Index
+│   │   └── graphs/                       # Graphify Output Visualizations
+│   ├── graphs/                           # Workspace Graph Snapshots
+│   └── raw/                              # Upload Workspace
 │
-├── docs/                     # Documentation & Knowledge Specifications
-├── models/                   # Local HuggingFace Embedding Cache
-├── .env.example              # Environment Configuration Template
-├── .gitignore                # Git Exclusions Policy
-└── README.md                 # Project Overview & Setup Guide
+├── docs/                                 # Developer Specifications
+│   ├── api_specification.md              # REST Endpoint Specs
+│   ├── architecture.md                   # System Architecture Details
+│   ├── database_schema.md                # MongoDB Collections Schema
+│   ├── deployment_setup.md               # Setup & Environment Guide
+│   ├── frontend_guide.md                 # UI Integration Guide
+│   ├── index.md                          # Documentation Index
+│   └── ingestion_and_graph.md            # Ingestion & Graph Builder Guide
+│
+├── .env.example                          # Environment Variables Template
+├── .gitignore                            # Git Exclusion Rules
+└── README.md                             # Project Documentation
 ```
 
 ---
 
 ## Environment Configuration
 
-Before running the application, copy the example environment file and configure your local settings:
+Copy the example environment template to create `.env`:
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-### Configuration Variables (`.env`)
+### Key Configuration Variables (`.env`)
 
 ```ini
-# Vault Path (Absolute path to wiki document vault)
-VAULT_PATH=D:\Wiki
-
 # MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017
-MONGODB_DB=aletheia_wiki
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB_NAME=aletheia_db
 
-# OpenAI API Settings
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_ENDPOINT=https://api.openai.com/v1
-OPENAI_API_VERSION=2024-08-01-preview
-OPENAI_LLM=gpt-4o-mini
+# Vault Directory Path
+VAULT_PATH=./data/vault
 
-# JWT Authentication
-JWT_SECRET=your_jwt_secret_key_change_in_production
-JWT_EXPIRE_HOURS=24
+# OpenAI / LLM Settings
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_CHAT_MODEL=gpt-4o
 
-# File Upload Directory
-UPLOAD_DIR=D:\Wiki\uploads
+# Embeddings Configuration
+TEXT_EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+CODE_EMBEDDING_MODEL_NAME=jinaai/jina-embeddings-v2-base-code
 
-# Server Network Settings
-HOST=0.0.0.0
-PORT=8000
+# JWT Security
+JWT_SECRET_KEY=your_jwt_secret_key
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# GitHub PAT (Optional for private repos)
+GITHUB_PAT=your_github_personal_access_token
 ```
 
 ---
@@ -148,68 +167,25 @@ PORT=8000
 ## Quick Start Guide
 
 ### Prerequisites
-- **Python:** 3.10 or higher
-- **Node.js:** v18.0 or higher
-- **MongoDB:** Running instance on `localhost:27017`
+- **Python:** 3.10+
+- **MongoDB:** Running instance at `localhost:27017`
 
-### 1. Setup Backend
+### Setup Backend Engine
 ```bash
-# Navigate to backend directory
+# Navigate to backend folder
 cd backend
 
 # Create and activate Python virtual environment
 py -3.10 -m venv .venv
-# On Windows PowerShell:
 .venv\Scripts\activate
-# On Linux/macOS:
-# source .venv/bin/activate
-
-# Install required packages
-pip install -r requirements.txt
-
-# Start FastAPI server
-python main.py
-```
-The backend API service will run on `http://localhost:8000`. API documentation is available at `http://localhost:8000/docs`.
-
-### 2. Setup Frontend
-```bash
-# Open a new terminal in the frontend directory
-cd frontend
 
 # Install dependencies
-npm install
-
-# Start Vite dev server
-npm run dev
+pip install -r requirements.txt
 ```
-The frontend interface will run on `http://localhost:5173`.
-
----
-
-## Pre-Push Checklist
-
-Before pushing this codebase to GitHub, complete the following verification steps:
-
-1. **Check Environment Secrets:**
-   Ensure no actual `.env` files or secret keys are committed. Verify with:
-   ```bash
-   git status
-   ```
-2. **Verify `.gitignore` Coverage:**
-   Confirm that `.venv/`, `node_modules/`, `codebase.zip`, `uploads/`, and `.env` are listed in `.gitignore`.
-3. **Clean Build Artifacts:**
-   Remove temporary build files and caches:
-   ```bash
-   # Remove python caches
-   find . -type d -name "__pycache__" -exec rm -r {} +
-   ```
-4. **Test Backend & Frontend Services:**
-   - Access OpenAPI documentation at `http://localhost:8000/docs`
-   - Access Web UI at `http://localhost:5173`
 
 ---
 
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
