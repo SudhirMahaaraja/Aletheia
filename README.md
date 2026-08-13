@@ -69,6 +69,12 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 - JWT authentication with refresh token revocation flow.
 - Structured audit logs for user logins, document uploads, and administrative actions.
 
+### 6. FastAPI Lifespan & Background Workers
+- **Async Database Connection:** Managed MongoDB connection lifecycle via `Motor`.
+- **Background Node Backfilling:** Asynchronously syncs vault files and backfills `Repository` and `File` graph nodes into `graph_nodes` and `graph_edges`.
+- **Document Cleanup:** Periodic automated cleanup task for expired generated documents.
+- **SPA Frontend Integration:** Embedded static file serving for single-page web frontends with 404 fallback routing and `/health` readiness check.
+
 ---
 
 ## Repository Structure
@@ -77,30 +83,31 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 .
 ├── backend/                              # Core Application Engine
 │   ├── app/
-│   │   └── controllers/                  # Service Controllers & Engines
-│   │       ├── ingestion/                # Ingestion Pipeline & Parsers
-│   │       │   ├── parsers/              # AST & Document Parsers (Python, JS, SQL, Doc)
-│   │       │   ├── chunker.py            # Code & Text Chunk Router
-│   │       │   ├── design_extractor.py   # UI/Design System Extractor
-│   │       │   ├── embedder.py           # Local & Remote Vector Embedder
-│   │       │   ├── graph_builder.py      # Graphifyy Knowledge Graph Builder
-│   │       │   └── pipeline.py           # Master Async Ingestion Pipeline
-│   │       ├── rag/                      # RAG Engines
-│   │       │   ├── brainstorm.py         # Architectural Brainstorm Engine
-│   │       │   ├── repo_chat.py          # Codebase RAG Assistant
-│   │       │   ├── retriever.py          # Dual Vector & Hybrid Retriever
-│   │       │   └── vault_chat.py         # Vault Knowledge Assistant
-│   │       ├── auth_controller.py        # Authentication & Role Management
-│   │       ├── github_controller.py      # GitHub Integration Service
-│   │       ├── graph_store.py           # Graph Query & Traversal Service
-│   │       ├── vault_manager.py          # Local Vault File Operations
-│   │       └── vector_store.py           # Vector Index & Search Store
-│   ├── core/                             # Infrastructure & Core Configuration
-│   │   ├── config.py                     # Pydantic Settings & Env Config
-│   │   ├── dependencies.py               # FastAPI Dependencies & DB Injections
-│   │   ├── embeddings.py                 # SentenceTransformers Models Loader
-│   │   ├── logging_config.py             # Structured App Logger
-│   │   └── security.py                   # JWT Utilities & Password Hashing
+│   │   ├── main.py                       # FastAPI Application Entrypoint & Lifespan Tasks
+│   │   ├── controllers/                  # Service Controllers & Engines
+│   │   │   ├── ingestion/                # Ingestion Pipeline & Parsers
+│   │   │   │   ├── parsers/              # AST & Document Parsers (Python, JS, SQL, Doc)
+│   │   │   │   ├── chunker.py            # Code & Text Chunk Router
+│   │   │   │   ├── design_extractor.py   # UI/Design System Extractor
+│   │   │   │   ├── embedder.py           # Local & Remote Vector Embedder
+│   │   │   │   ├── graph_builder.py      # Graphifyy Knowledge Graph Builder
+│   │   │   │   └── pipeline.py           # Master Async Ingestion Pipeline
+│   │   │   ├── rag/                      # RAG Engines
+│   │   │   │   ├── brainstorm.py         # Architectural Brainstorm Engine
+│   │   │   │   ├── repo_chat.py          # Codebase RAG Assistant
+│   │   │   │   ├── retriever.py          # Dual Vector & Hybrid Retriever
+│   │   │   │   └── vault_chat.py         # Vault Knowledge Assistant
+│   │   │   ├── auth_controller.py        # Authentication & Role Management
+│   │   │   ├── github_controller.py      # GitHub Integration Service
+│   │   │   ├── graph_store.py           # Graph Query & Traversal Service
+│   │   │   ├── vault_manager.py          # Local Vault File Operations
+│   │   │   └── vector_store.py           # Vector Index & Search Store
+│   │   └── core/                         # Infrastructure & Core Configuration
+│   │       ├── config.py                 # Pydantic Settings & Env Config
+│   │       ├── dependencies.py           # FastAPI Security Dependencies & DB Injections
+│   │       ├── embeddings.py             # Dual Embedding Loaders & Transformers v5 Patches
+│   │       ├── logging_config.py         # Structured App Logger
+│   │       └── security.py               # JWT Utilities & Password Hashing
 │   └── requirements.txt                  # Backend Python Dependencies
 │
 ├── data/                                 # Knowledge Storage & Vault
@@ -181,6 +188,9 @@ py -3.10 -m venv .venv
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Run application server
+uvicorn app.main:app --reload --port 8000
 ```
 
 ---
@@ -188,4 +198,5 @@ pip install -r requirements.txt
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
 
