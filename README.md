@@ -34,6 +34,8 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 
 ### Core Tech Stack
 - **Backend Framework:** Python 3.10+ with FastAPI / Motor (Asynchronous MongoDB Client)
+- **API Router Layer:** Versioned REST API endpoints (`/api/v1/*`) structured into controllers, schemas, and view route handlers
+- **Database Engine:** MongoDB managed asynchronously via `Motor` with auto-managed index creation (unique, TTL, and text search indexes)
 - **Code & AST Parsing:** Tree-Sitter (`tree-sitter-javascript`), Python AST, `sqlparse`, PyMuPDF (`fitz`), `python-docx`
 - **Knowledge Graph Builder:** `graphifyy` AST and concept graph extractor
 - **Vector Embeddings:** Dual embedding pipelines:
@@ -66,10 +68,23 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 - Extracts file trees, generates repo overview pages, and mirrors raw source code into local vault structure.
 
 ### 5. Role-Based Security & Audit Logging
-- JWT authentication with refresh token revocation flow.
-- Structured audit logs for user logins, document uploads, and administrative actions.
+- JWT authentication with refresh token revocation flow (`auth_controller.py`).
+- Structured audit logs for user logins, role modifications, document uploads, and administrative actions (`audit_logs`).
 
-### 6. FastAPI Lifespan & Background Workers
+### 6. MongoDB Indexing & Database Management
+- Asynchronous MongoDB client (`mongodb.py`) with health ping and index management across collections (`users`, `repositories`, `documents`, `ingestion_jobs`, `chat_sessions`, `chat_messages`, `graph_nodes`, `graph_edges`, `audit_logs`, `code_chunks`, `document_chunks`).
+- Configures 90-day TTL indexes on audit logs, unique key constraints on emails/repos, and full-text index on graph nodes.
+
+### 7. Versioned REST API Layer (`/api/v1`)
+- **Authentication (`/api/v1/auth`):** Registration, OAuth2 login, token refresh, logout, and current user profile (`/me`).
+- **GitHub Connections (`/api/v1/github`):** PAT validation, account activation/deletion, repo listing, branch inspection, and repo selection/deselection.
+- **Ingestion Pipeline (`/api/v1/ingest`):** Async repository ingestion, repo-to-vault sync, document upload, project management, and job tracking.
+- **RAG Chat & Sessions (`/api/v1/chat`):** Chat session management, message streaming (SSE), and generated document downloads (`.docx`).
+- **Semantic Vector Search (`/api/v1/search`):** Multi-collection vector search across code and document embeddings with repository filtering.
+- **Knowledge Graph Traversal (`/api/v1/graph`):** Node listing, edge graph traversal, and dynamic concept/wiki page loading.
+- **System Administration (`/api/v1/admin`):** User role management, account deletion, system audit logs, and operational statistics.
+
+### 8. FastAPI Lifespan & Background Workers
 - **Async Database Connection:** Managed MongoDB connection lifecycle via `Motor`.
 - **Background Node Backfilling:** Asynchronously syncs vault files and backfills `Repository` and `File` graph nodes into `graph_nodes` and `graph_edges`.
 - **Document Cleanup:** Periodic automated cleanup task for expired generated documents.
@@ -84,7 +99,7 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 ├── backend/                              # Core Application Engine
 │   ├── app/
 │   │   ├── main.py                       # FastAPI Application Entrypoint & Lifespan Tasks
-│   │   ├── controllers/                  # Service Controllers & Engines
+│   │   ├── controllers/                  # Service Controllers & Business Logic
 │   │   │   ├── ingestion/                # Ingestion Pipeline & Parsers
 │   │   │   │   ├── parsers/              # AST & Document Parsers (Python, JS, SQL, Doc)
 │   │   │   │   ├── chunker.py            # Code & Text Chunk Router
@@ -102,12 +117,32 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 │   │   │   ├── graph_store.py           # Graph Query & Traversal Service
 │   │   │   ├── vault_manager.py          # Local Vault File Operations
 │   │   │   └── vector_store.py           # Vector Index & Search Store
-│   │   └── core/                         # Infrastructure & Core Configuration
-│   │       ├── config.py                 # Pydantic Settings & Env Config
-│   │       ├── dependencies.py           # FastAPI Security Dependencies & DB Injections
-│   │       ├── embeddings.py             # Dual Embedding Loaders & Transformers v5 Patches
-│   │       ├── logging_config.py         # Structured App Logger
-│   │       └── security.py               # JWT Utilities & Password Hashing
+│   │   ├── core/                         # Infrastructure & Core Configuration
+│   │   │   ├── config.py                 # Pydantic Settings & Env Config
+│   │   │   ├── dependencies.py           # FastAPI Security Dependencies & DB Injections
+│   │   │   ├── embeddings.py             # Dual Embedding Loaders & Transformers v5 Patches
+│   │   │   ├── logging_config.py         # Structured App Logger
+│   │   │   └── security.py               # JWT Utilities & Password Hashing
+│   │   ├── db/                           # Database Client & Index Management
+│   │   │   └── mongodb.py                # Async Motor Connection Client & Index Creation
+│   │   └── views/                        # API View Layer & Pydantic Schemas
+│   │       ├── schemas/                  # Request/Response DTO Schemas
+│   │       │   ├── admin.py              # User management & Stats DTOs
+│   │       │   ├── auth.py               # Login, Register & Token DTOs
+│   │       │   ├── chat.py               # Session & Message DTOs
+│   │       │   ├── github.py             # PAT & Repository Selection DTOs
+│   │       │   ├── graph.py              # Node & Edge Response DTOs
+│   │       │   ├── ingest.py             # Ingestion Job & Project DTOs
+│   │       │   └── search.py             # Vector Search Result DTOs
+│   │       └── v1/                       # Version 1 API Route Handlers
+│   │           ├── admin.py              # System Admin & Audit Logs Endpoints
+│   │           ├── auth.py               # Authentication & User Info Endpoints
+│   │           ├── chat.py               # Multi-Mode RAG Chat & Session Endpoints
+│   │           ├── github.py             # Connection & Repository Endpoints
+│   │           ├── graph.py              # Knowledge Graph Query & Traversal Endpoints
+│   │           ├── ingest.py             # Repository & Document Ingestion Endpoints
+│   │           ├── router.py             # Master V1 Router Includer
+│   │           └── search.py             # Knowledge Base Vector Search Endpoint
 │   └── requirements.txt                  # Backend Python Dependencies
 │
 ├── data/                                 # Knowledge Storage & Vault
