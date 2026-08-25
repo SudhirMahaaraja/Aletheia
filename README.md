@@ -2,7 +2,7 @@
 
 > *The act of revealing what is hidden*
 
-**Aletheia** is a modern, high-performance internal knowledge vault, code-graph ingestion engine, and retrieval-augmented AI assistant (RAG). It combines multi-language code & document parsing (Python, JavaScript/TypeScript, SQL, PDF, DOCX, Markdown), dense vector embeddings (code & text), Obsidian-compatible Markdown vault generation, knowledge graph construction via Graphifyy, and multi-mode RAG AI engines.
+**Aletheia** is a modern, high-performance internal knowledge vault, code-graph ingestion engine, and retrieval-augmented AI assistant (RAG). It combines multi-language code & document parsing (Python, JavaScript/TypeScript, SQL, PDF, DOCX, Markdown, Jupyter Notebooks), dense vector embeddings (code & text), Obsidian-compatible Markdown vault generation, knowledge graph construction via Graphifyy, and multi-mode RAG AI engines.
 
 ---
 
@@ -17,8 +17,9 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 ├──────────────────────────────┬──────────────────────────────┤
 │  Ingestion & AST Parsers     │    Multi-Mode RAG Engines   │
 │  (Tree-sitter JS, Python,    │   - Vault Chat               │
-│   SQL, PDF/Docx, Markdown)   │   - Codebase Repo Chat       │
-│  (Graphifyy Graph Builder)   │   - Architectural Brainstorm │
+│   SQL, PDF/Docx, Markdown,   │   - Codebase Repo Chat       │
+│   Jupyter Notebooks)         │   - Architectural Brainstorm │
+│  (Graphifyy Graph Builder)   │                              │
 └──────────────┬───────────────┴──────────────┬───────────────┘
                │                              │
      MongoDB & Vector Storage        Embedding Models
@@ -28,7 +29,9 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 │       MongoDB Database       ││  Knowledge Vault Directory   │
 │ (document_chunks,            ││   (data/vault/wiki,          │
 │  code_chunks, graph_nodes,   ││    data/vault/raw,           │
-│  graph_edges, repositories)  ││    data/vault/graphs)       │
+│  graph_edges, repositories,  ││    data/vault/graphs,        │
+│  users, audit_logs, jobs,    ││    data/vault/generated)     │
+│  chat_sessions, projects)    ││                              │
 └──────────────────────────────┘└──────────────────────────────┘
 ```
 
@@ -50,13 +53,14 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 
 ### 1. Multi-Language Code & Document Ingestion
 - **AST Code Parsing:** Extracts functions, classes, dependencies, and calls from Python (`.py`), JavaScript/TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`), and SQL (`.sql`) files.
-- **Document & Media Support:** Parses `.md`, `.txt`, `.pdf`, `.docx`, and `.ipynb` files with automated chunking.
+- **Document & Media Support:** Parses `.md`, `.txt`, `.pdf`, `.docx`, and `.ipynb` files with automated chunking and character limit guardrails (`MAX_EMBEDDING_CHARS`).
 - **Design System Extractor:** Automatically analyzes repository design tokens, UI components, and styling conventions (`design_extractor.py`).
 
 ### 2. Knowledge Graph Construction & Vault Sync
 - Builds node-edge knowledge graphs connecting files, functions, concepts, and documentation via `graphifyy`.
 - Generates an Obsidian-compatible Markdown Vault under `data/vault/` with frontmatter metadata and internal wiki links (`[[link]]`).
 - Synchronizes graph nodes and edges (`graph_nodes`, `graph_edges`) in MongoDB.
+- Background backfill lifecycle task auto-syncs repository and file nodes for connected codebases.
 
 ### 3. Multi-Engine RAG Assistant
 - **Vault Chat (`vault_chat.py`):** Answers domain knowledge queries based on indexed documentation chunks.
@@ -64,30 +68,34 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 - **Architectural Brainstorm (`brainstorm.py`):** Generates architectural plans and component recommendations based on indexed codebases and design systems.
 
 ### 4. GitHub Remote Ingestion & Automated Mirroring
+- Multi-connection PAT token management (connect, activate, delete, and list accounts).
 - Clones and indexes external GitHub repositories.
 - Extracts file trees, generates repo overview pages, and mirrors raw source code into local vault structure.
+- Fully automated cascaded deletion of ingested repositories (clearing code chunks, documents, graph nodes/edges, and local vault folders).
 
 ### 5. Role-Based Security & Audit Logging
 - JWT authentication with refresh token revocation flow (`auth_controller.py`).
+- Role-based authorization matrix (`admin`, `developer`, `pm`).
+- System user administration (list users, modify roles, delete user accounts).
 - Structured audit logs for user logins, role modifications, document uploads, and administrative actions (`audit_logs`).
 
 ### 6. MongoDB Indexing & Database Management
-- Asynchronous MongoDB client (`mongodb.py`) with health ping and index management across collections (`users`, `repositories`, `documents`, `ingestion_jobs`, `chat_sessions`, `chat_messages`, `graph_nodes`, `graph_edges`, `audit_logs`, `code_chunks`, `document_chunks`).
+- Asynchronous MongoDB client (`mongodb.py`) with health ping and index management across collections (`users`, `repositories`, `documents`, `ingestion_jobs`, `github_connections`, `chat_sessions`, `chat_messages`, `graph_nodes`, `graph_edges`, `audit_logs`, `code_chunks`, `document_chunks`, `projects`).
 - Configures 90-day TTL indexes on audit logs, unique key constraints on emails/repos, and full-text index on graph nodes.
 
 ### 7. Versioned REST API Layer (`/api/v1`)
-- **Authentication (`/api/v1/auth`):** Registration, OAuth2 login, token refresh, logout, and current user profile (`/me`).
-- **GitHub Connections (`/api/v1/github`):** PAT validation, account activation/deletion, repo listing, branch inspection, and repo selection/deselection.
-- **Ingestion Pipeline (`/api/v1/ingest`):** Async repository ingestion, repo-to-vault sync, document upload, project management, and job tracking.
+- **Authentication (`/api/v1/auth`):** Registration (Admin-only), OAuth2 login, token refresh, logout, and current user profile (`/me`).
+- **GitHub Connections (`/api/v1/github`):** PAT validation (`/connect`), connection listing (`/connections`), activation (`/connections/activate`), deletion (`/connections`), repository selection/deselection, branch inspection, and cascaded repository deletion (`DELETE /repos/{repo_full_name}`).
+- **Ingestion Pipeline (`/api/v1/ingest`):** Async repository ingestion (`/repo`, `/repo-to-vault`), document upload (`/document`), project management (`/projects`), job tracking (`/jobs`, `/jobs/{job_id}`), job deletion (`DELETE /jobs/{job_id}`), and document deletion (`DELETE /document/{document_id}`).
 - **RAG Chat & Sessions (`/api/v1/chat`):** Chat session management, message streaming (SSE), and generated document downloads (`.docx`).
 - **Semantic Vector Search (`/api/v1/search`):** Multi-collection vector search across code and document embeddings with repository filtering.
 - **Knowledge Graph Traversal (`/api/v1/graph`):** Node listing, edge graph traversal, and dynamic concept/wiki page loading.
-- **System Administration (`/api/v1/admin`):** User role management, account deletion, system audit logs, and operational statistics.
+- **System Administration (`/api/v1/admin`):** User role management (`/users/{user_id}/role`), user deletion (`DELETE /users/{user_id}`), system audit logs (`/audit-logs`), and operational system statistics (`/stats`).
 
 ### 8. FastAPI Lifespan & Background Workers
 - **Async Database Connection:** Managed MongoDB connection lifecycle via `Motor`.
 - **Background Node Backfilling:** Asynchronously syncs vault files and backfills `Repository` and `File` graph nodes into `graph_nodes` and `graph_edges`.
-- **Document Cleanup:** Periodic automated cleanup task for expired generated documents.
+- **Document Cleanup:** Periodic automated cleanup task for expired generated documents (`.docx`).
 - **SPA Frontend Integration:** Embedded static file serving for single-page web frontends with 404 fallback routing and `/health` readiness check.
 
 ---
@@ -101,7 +109,7 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 │   │   ├── main.py                       # FastAPI Application Entrypoint & Lifespan Tasks
 │   │   ├── controllers/                  # Service Controllers & Business Logic
 │   │   │   ├── ingestion/                # Ingestion Pipeline & Parsers
-│   │   │   │   ├── parsers/              # AST & Document Parsers (Python, JS, SQL, Doc)
+│   │   │   │   ├── parsers/              # AST & Document Parsers (Python, JS, SQL, Doc, PDF, ipynb)
 │   │   │   │   ├── chunker.py            # Code & Text Chunk Router
 │   │   │   │   ├── design_extractor.py   # UI/Design System Extractor
 │   │   │   │   ├── embedder.py           # Local & Remote Vector Embedder
@@ -124,10 +132,20 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 │   │   │   ├── logging_config.py         # Structured App Logger
 │   │   │   └── security.py               # JWT Utilities & Password Hashing
 │   │   ├── db/                           # Database Client & Index Management
+│   │   │   ├── __init__.py
 │   │   │   └── mongodb.py                # Async Motor Connection Client & Index Creation
+│   │   ├── models/                       # Domain Data Models
+│   │   │   ├── audit.py                  # Audit Log Model
+│   │   │   ├── document.py               # Document & Document Chunk Models
+│   │   │   ├── graph.py                  # Node & Edge Models
+│   │   │   ├── job.py                    # Ingestion Job Model
+│   │   │   ├── project.py                # Project Model
+│   │   │   ├── repository.py             # Repository & Code Chunk Models
+│   │   │   ├── session.py                # Chat Session & Message Models
+│   │   │   └── user.py                   # User & Token Models
 │   │   └── views/                        # API View Layer & Pydantic Schemas
 │   │       ├── schemas/                  # Request/Response DTO Schemas
-│   │       │   ├── admin.py              # User management & Stats DTOs
+│   │       │   ├── admin.py              # User management, Audit & Stats DTOs
 │   │       │   ├── auth.py               # Login, Register & Token DTOs
 │   │       │   ├── chat.py               # Session & Message DTOs
 │   │       │   ├── github.py             # PAT & Repository Selection DTOs
@@ -149,7 +167,8 @@ The project is built on a modular, asynchronous backend architecture for multi-s
 │   ├── vault/                            # Obsidian-Compatible Local Vault
 │   │   ├── raw/                          # Original File Mirrors
 │   │   ├── wiki/                         # Generated Markdown Wiki & Index
-│   │   └── graphs/                       # Graphify Output Visualizations
+│   │   ├── graphs/                       # Graphify Output Visualizations
+│   │   └── generated/                    # Temporary Generated Documents (.docx)
 │   ├── graphs/                           # Workspace Graph Snapshots
 │   └── raw/                              # Upload Workspace
 │
@@ -233,5 +252,6 @@ uvicorn app.main:app --reload --port 8000
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
 
 
